@@ -9,6 +9,10 @@
 
   in {
     nixosConfigurations = {
+      os-iso = nixpkgs.lib.nixosSystem {
+        inherit system;
+        modules = [ ./os-iso.nix ];
+      };
       controlplane = nixpkgs.lib.nixosSystem {
         inherit system;
         modules = [ ./controlplane.nix ];
@@ -20,7 +24,8 @@
     };
 
     packages.${system} = {
-      controlplane-iso = self.nixosConfigurations.controlplane.config.system.build.image;  # Use .image
+      os-iso = self.nixosConfigurations.os-iso.config.system.build.image;
+      controlplane-iso = self.nixosConfigurations.controlplane.config.system.build.image;
       worker-iso = self.nixosConfigurations.worker.config.system.build.image;
       default = self.packages.${system}.controlplane-iso;
     };

@@ -20,8 +20,8 @@
   # Networking configuration
   systemd.network.enable = true;
 
-  systemd.network.networks."20-eth0" = {
-    matchConfig.Name = "eth0";
+  systemd.network.networks."20-enp1s0" = {
+    matchConfig.Name = "enp1s0";
     networkConfig = {
       DHCP = "yes";
       Address = [ "10.99.0.10/24" ];
@@ -30,6 +30,8 @@
 
   # Install dependencies
   environment.systemPackages = with pkgs; [
+    #Setup utility
+    disko
     # Enable installation from ISO
     gptfdisk
     rsync
