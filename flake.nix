@@ -12,7 +12,7 @@
     system = "aarch64-linux";
   in {
     nixosConfigurations = {
-      server = nixpkgs.lib.nixosSystem {
+      system = nixpkgs.lib.nixosSystem {
         inherit system;
         modules = [
           disko.nixosModules.disko
@@ -21,9 +21,31 @@
         ];
       };
 
-      installer = unattended.lib.diskoInstallerWrapper self.nixosConfigurations.server { };
+      k8s-controlplane = nixpkgs.lib.nixosSystem {
+        inherit system;
+        modules = [
+          disko.nixosModules.disko
+          ./os_configuration.nix
+          ./kubernetes-master.nix
+        ];
+      };
+
+      k8s-worker = nixpkgs.lib.nixosSystem {
+        inherit system;
+        modules = [
+          disko.nixosModules.disko
+          ./os_configuration.nix
+          ./kubernetes-worker.nix
+        ];
+      };
+
+      # Installers
+      installer-system = unattended.lib.diskoInstallerWrapper self.nixosConfigurations.system { };
+      installer-k8s = unattended.lib.diskoInstallerWrapper self.nixosConfigurations.kubernetes { };
     };
 
-    packages.${system}.iso = self.nixosConfigurations.installer.config.system.build.isoImage;
-  };
+    packages.${system} = {
+      iso-base = self.nixosConfigurations.installer-system.config.system.build.isoImage;
+      iso-k8s  = self.nixosConfigurations.installer-k8s.config.system.build.isoImage;
+    };  };
 }
