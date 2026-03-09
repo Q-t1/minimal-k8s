@@ -1,35 +1,29 @@
 {
-  description = "Kubeadm NixOS ISOs";
+  description = "NixOS kubeadm server bootstrap ISO (aarch64)";
 
-  inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+  inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    disko.url = "github:nix-community/disko";
+    disko.inputs.nixpkgs.follows = "nixpkgs";
+    unattended.url = "github:chrillefkr/nixos-unattended-installer";  # rename to avoid conflict
+  };
 
-  outputs = { self, nixpkgs }: let
-
-  system =  "aarch64-linux";
-
+  outputs = { self, nixpkgs, disko, unattended }: let
+    system = "aarch64-linux";
   in {
     nixosConfigurations = {
-      os-iso = nixpkgs.lib.nixosSystem {
+      server = nixpkgs.lib.nixosSystem {
         inherit system;
-        modules = [ ./os-iso.nix ];
+        modules = [
+          disko.nixosModules.disko
+          ./os_configuration.nix
+          ./kubernetes.nix
+        ];
       };
-      controlplane = nixpkgs.lib.nixosSystem {
-        inherit system;
-        modules = [ ./controlplane.nix ];
-      };
-      worker = nixpkgs.lib.nixosSystem {
-        inherit system;
-        modules = [ ./worker.nix ];
-      };
+
+      installer = unattended.lib.diskoInstallerWrapper self.nixosConfigurations.server { };
     };
 
-    packages.${system} = {
-      os-iso = self.nixosConfigurations.os-iso.config.system.build.image;
-      controlplane-iso = self.nixosConfigurations.controlplane.config.system.build.image;
-      worker-iso = self.nixosConfigurations.worker.config.system.build.image;
-      default = self.packages.${system}.controlplane-iso;
-    };
-
+    packages.${system}.iso = self.nixosConfigurations.installer.config.system.build.isoImage;
   };
 }
-
